@@ -18,8 +18,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -63,7 +61,7 @@ func main() {
 		conn.Handshake()
 		certs := conn.ConnectionState().PeerCertificates
 		log.Printf("%s: %d certs (%T)\n", addr, len(certs), certs)
-		for _, c := range certs {
+		for i, c := range certs {
 			log.Printf("--------------------------------------\n")
 			// log.Printf("cert: %+v\n", c)
 			log.Printf("Issuer: %+v\n", c.Issuer)
@@ -73,7 +71,8 @@ func main() {
 			f, err := persist(c)
 			die(err)
 
-			addCert(keystore, *passwd, f, uuid.New().String())
+			alias := fmt.Sprintf("%s_%d", addr, i)
+			addCert(keystore, *passwd, f, alias)
 
 			// defer()ing can result in resource saturation such as
 			// maximum number of open files e.a., but a common cert
@@ -85,9 +84,9 @@ func main() {
 			}
 
 			if *chain {
-				caf, err := fetch(*c)
+				caf, err := fetchIssuer(*c)
 				die(err)
-				addCert(keystore, *passwd, f,
+				addCert(keystore, *passwd, caf,
 					filepath.Base(caf))
 				if *keep {
 					log.Printf("keeping interim file %s\n",
@@ -126,7 +125,7 @@ func die(err error) {
 	}
 }
 
-func fetch(c x509.Certificate) (string, error) {
+func fetchIssuer(c x509.Certificate) (string, error) {
 	// Should we support multiple URLs?
 	url := c.IssuingCertificateURL[0]
 	log.Printf("fetching referenced CA %s\n", url)
