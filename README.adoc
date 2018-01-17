@@ -1,0 +1,63 @@
+= Overview
+
+This small utility helps in maintaining self signed certificates, and
+certificate authorities (CA) that are not supported by Java out of the box (such
+as custom enterprise root CAs).
+
+If your organization is running its own CA, you need to make each and every new
+JDK version familiar with this CA.
+
+== Prerequisites
+
+- Java (JRE). Specifically, the Java binary `keytool` and the CA truststore
+`${JAVA_HOME}/jre/lib/security/cacerts`.
+
+If you do not have a local JRE, this utility does not make any sense for you.
+
+== Installation
+
+== Install binary release
+
+Download Linux or Windows version from the github 'releases' section. These are
+standalone, statically linked executables without any dependencies such as
+libcurl, OpenSSL, ....
+
+Did i mention i love this Go feature?
+
+== Install from source
+
+----
+$ go get github.com/jhinrichsen/import-server-cert
+----
+
+== Usage
+
+Show help:
+
+----
+$ import-server-cert --help
+Usage of ./import-server-cert:
+  -chain
+        Import complete CA chain (default true)
+  -insecure
+        Allow custom cert path (default true)
+  -keep
+        Keep interim certificates in temporary directory
+  -keystorepasswd string
+        keystore password (default "changeit")
+----
+
+Typical use:
+
+----
+$ JAVA_HOME=<path> import-server-cert jira.mycompany.com:443
+----
+
+== What it does
+
+- Create a backup copy of `${JAVA_HOME}/jre/lib/security/cacerts`
+- Download the TLS certificate from the remote server, and install it via Java's
+  `keytool` into the trust store
+- Optionally (`--chain=true`) download and install certificate chain. This
+  requires the X.509 AIA extension (issuing CA certificate URL) to be supplied
+  by the certificate.
